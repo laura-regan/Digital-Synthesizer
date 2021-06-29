@@ -1,0 +1,10 @@
+
+
+OPTION psf_version = 2.1;
+
+BEGIN DRIVER Moog_Ladder_Filter
+	OPTION supported_peripherals = (Moog_Ladder_Filter);
+	OPTION copyfiles = all;
+	OPTION VERSION = 1.0;
+	OPTION NAME = Moog_Ladder_Filter;
+END DRIVER
