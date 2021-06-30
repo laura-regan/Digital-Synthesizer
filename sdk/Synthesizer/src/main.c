@@ -1,5 +1,5 @@
 /**
- * 	Project: FPGA Synthesizer
+ * 	Project: Soc+FPGA Synthesizer
  * 	Author: Laura Regan Williams
  * 	Date: 24/11/2020
  *
@@ -82,7 +82,7 @@ XUartPs UartInst;				/* Instance of the UART Device */
 XUartPs MidiInst;				/* Instance of the MIDI Device */
 XScuGic InterruptController;	/* Instance of the Interrupt Controller */
 XSysMon SysMonInst;				/* Instance of the SysMon Device*/
-XScuTimer TimerInst;
+XScuTimer TimerInst;			/* Instance of the Timer Device */
 XGpio input, output;
 
 static u8 RecvBuffer[UART_BUFFER_SIZE];	/* UART receive buffer */
@@ -95,7 +95,7 @@ int main(void)
 	int Status;
 	int enablePhysicalInterface = 0;
 
-	// GPIO
+	// Initialise GPIO
 	int ButtonData = 0;
 	int SwitchData = 0;
 
@@ -108,17 +108,17 @@ int main(void)
 	XGpio_SetDataDirection(&output, 1, 0x0);
 	XGpio_SetDataDirection(&output, 2, 0x0);
 
-	// UART
+	// Initialise UART
 	SetupUARTSystem(&UartInst);
 	SetupMIDISystem(&MidiInst);
 
-	// System Monitor (XADC)
+	// Initialise System Monitor (XADC)
 	SetupXADCSystem(&SysMonInst);
 
-	// Timer
+	// Initialise Timer
 	SetupTimerSystem(&TimerInst);
 
-	// Interrupt Controller
+	// Initialise Interrupt Controller
 	Status = SetupInterruptSystem(&InterruptController, &SysMonInst, INTR_ID, &UartInst, UART_INT_IRQ_ID, &MidiInst, MIDI_INT_IRQ_ID, &TimerInst, TIMER_INT_IRQ_ID);
 	if (Status != XST_SUCCESS)
 	{
@@ -209,7 +209,7 @@ int main(void)
 			setOscillatorWaveform(OSCILLATOR_ADDR, 0, osc1Waveform);
 
 			int osc1Detune = 24.0*(2048.0 - adcData[31])/2048.0;
-			//setOscillatorDetune(OSCILLATOR_ADDR, 0, osc1Detune);
+			setOscillatorDetune(OSCILLATOR_ADDR, 0, osc1Detune);
 
 			float osc1PulseWidth = (4095.0 - adcData[26])/4095.0;
 			setOscillatorPulseWidth(OSCILLATOR_ADDR, 0, osc1PulseWidth);
@@ -217,23 +217,23 @@ int main(void)
 			float osc1Mix = (4095.0 - adcData[8])/4095.0;
 			setOscillatorMix(OSCILLATOR_ADDR, 0, osc1Mix);
 
-			//int osc2Waveform = (4095 - adcData[5])/1024;
-			//setOscillatorWaveform(OSCILLATOR_ADDR, 1, osc2Waveform);
+			int osc2Waveform = (4095 - adcData[4])/1024;
+			setOscillatorWaveform(OSCILLATOR_ADDR, 1, osc2Waveform);
 
 			int osc2Detune = 24.0*(2048.0 - adcData[29])/2048.0;
-			//setOscillatorDetune(OSCILLATOR_ADDR, 1, osc2Detune);
+			setOscillatorDetune(OSCILLATOR_ADDR, 1, osc2Detune);
 
 			float osc2PulseWidth = (4095.0 - adcData[7])/4095.0;
 			setOscillatorPulseWidth(OSCILLATOR_ADDR, 1, osc2PulseWidth);
 
 			float osc2Mix = (4095.0 - adcData[11])/4095.0;
-			//setOscillatorMix(OSCILLATOR_ADDR, 1, osc2Mix);
+			setOscillatorMix(OSCILLATOR_ADDR, 1, osc2Mix);
 
 			int osc3Waveform = (4095 - adcData[15])/1024;
 			setOscillatorWaveform(OSCILLATOR_ADDR, 2, osc3Waveform);
 
 			int osc3Detune = 24.0*(2048.0 - adcData[14])/2048.0;
-			//setOscillatorDetune(OSCILLATOR_ADDR, 2, osc3Detune);
+			setOscillatorDetune(OSCILLATOR_ADDR, 2, osc3Detune);
 
 			float osc3PulseWidth = (4095.0 - adcData[13])/4095.0;
 			setOscillatorPulseWidth(OSCILLATOR_ADDR, 2, osc3PulseWidth);
@@ -259,30 +259,37 @@ int main(void)
 			float sustain = (4095.0 - adcData[23])/4095.0;
 			setAdsrSustain(ADSR_ADDR, sustain);
 
-			float release = 10.0 * (4095.0 - adcData[2])/4095.0; // faulty potentiometer
+			float release = 10.0 * (4095.0 - adcData[2])/4095.0;
 			setAdsrRelease(ADSR_ADDR, release);
 
-			int lfo1Waveform = (4095 - adcData[24])/2048;
+			int lfo1Waveform = (4095 - adcData[24])/1024;
+			setLfoWaveform(LFO_A_ADDR, lfo1Waveform);
 
-			int lfo1Rate = (4095 - adcData[21])/2048;
+			float lfo1Rate = 30.0*(4095.0 - adcData[21])/4095.0;
+			setLfoRate(LFO_A_ADDR, lfo1Rate);
 
-			int lfo1Amount = (4095 - adcData[16])/4095;
+			float lfo1Amount = (4095.0 - adcData[16])/4095.0;
+			setLfoAmount(LFO_A_ADDR, lfo1Amount);
 
-			int lfo2Waveform = (4095 - adcData[20])/2048;
+			int lfo2Waveform = (4095 - adcData[20])/1024;
+			setLfoWaveform(LFO_B_ADDR, lfo2Waveform);
 
-			int lfo2Rate = (4095 - adcData[18])/2048;
+			float lfo2Rate = 30.0*(4095.0 - adcData[18])/4095.0;
+			setLfoRate(LFO_B_ADDR, lfo2Rate);
 
-			//int lfo2Amount = (4095 - adcData[])/4095;
+			float lfo2Amount = (4095 - adcData[3])/4095;
+			setLfoAmount(LFO_B_ADDR, lfo2Amount);
 
-			//int lfo3Waveform = (4095 - adcData[])/2048;
+			int lfo3Waveform = (4095 - adcData[20])/1024;
+			setLfoWaveform(LFO_C_ADDR, lfo3Waveform);
 
-			int lfo3Rate = (4095 - adcData[1])/2048;
+			float lfo3Rate = 30.0*(4095.0 - adcData[1])/4095.0;
+			setLfoRate(LFO_C_ADDR, lfo3Rate);
 
-			int lfo3Amount = (4095 - adcData[0])/4095;
+			float lfo3Amount = (4095.0 - adcData[0])/4095.0;
+			setLfoAmount(LFO_C_ADDR, lfo3Amount);
 
 		}
-
-		//usleep(2000);
 	}
 }
 
@@ -934,12 +941,10 @@ void MIDIInterruptHandler(void *CallBackRef, u32 Event, unsigned int EventData)
 		if (count != 0)
 		{
 			char command = (MidiBuffer[0] & 0xF0);
-			//char channel;
 			char note;
 			switch (command)
 			{
 			case NOTE_OFF:
-				//channel = (MidiBuffer[0] & 0x0F);
 				readUart(MidiInstPtr, MidiBuffer, 2);
 				note = MidiBuffer[0];
 				SynthNoteOff(note);
@@ -983,9 +988,7 @@ static void XAdcInterruptHandler(void *CallBackRef)
 	for (idx = 0; idx < 16; idx++)
 	{
 		adcData[idx+mux*16] = (XSysMon_GetAdcData(&SysMonInst, XSM_CH_AUX_MIN + idx) >> 4);
-		//DEBUG_PRINT(("CH%i: %u. ", idx+mux*16, adcData[idx+mux*16]));
 	}
-	//DEBUG_PRINT(("\n\r"));
 
 	mux = (mux+1)%2;
 	XGpio_DiscreteWrite(&output, 2, mux);
